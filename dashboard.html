@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aarogya General Hospital — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --page:#F2FAFF; --surface:#FFFFFF; --wash:#E0F2FE; --line:#CFE8F7;
+  --sky:#38BDF8; --sky-deep:#0284C7; --sky-ink:#075985;
+  --ink:#07293D; --muted:#5B7C91;
+  --stable:#10B981; --attention:#F97316; --critical:#E11D48;
+  --shadow:0 1px 2px rgba(7,41,61,.06), 0 8px 24px -12px rgba(7,41,61,.18);
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#042231; --surface:#073650; --wash:#0A4463; --line:#115A7F;
+    --ink:#EAF7FF; --muted:#9CC4DA; --sky-ink:#7DD3FC;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --page:#042231; --surface:#073650; --wash:#0A4463; --line:#115A7F;
+  --ink:#EAF7FF; --muted:#9CC4DA; --sky-ink:#7DD3FC;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Inter,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.num{font-family:Archivo,Inter,Arial,sans-serif;letter-spacing:-.015em}
+
+/* shell */
+.shell{display:grid;grid-template-columns:224px 1fr;min-height:100vh}
+.rail{background:var(--surface);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:24px;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:10px;align-items:center;padding:0 6px}
+.mark{width:34px;height:34px;border-radius:10px;flex:none;background:linear-gradient(150deg,var(--sky),var(--sky-deep));display:grid;place-items:center;color:#fff;font-family:Archivo;font-weight:700}
+.brand b{display:block;font-family:Archivo;font-size:14px;font-weight:600;line-height:1.2}
+.brand span{font-size:11px;color:var(--muted)}
+nav{display:flex;flex-direction:column;gap:3px}
+nav button{display:flex;align-items:center;gap:10px;padding:10px;border:none;background:none;border-radius:9px;color:var(--muted);font:inherit;font-size:13px;font-weight:500;cursor:pointer;text-align:left;width:100%;transition:background .18s,color .18s}
+nav button svg{width:17px;height:17px;flex:none}
+nav button:hover{background:var(--wash);color:var(--sky-ink)}
+nav button.on{background:var(--wash);color:var(--sky-ink);font-weight:600}
+:focus-visible{outline:2px solid var(--sky-deep);outline-offset:2px}
+.rail-foot{margin-top:auto;font-size:11px;color:var(--muted);padding:0 6px;line-height:1.7}
+.rail-foot b{color:var(--ink);font-weight:600}
+main{padding:20px 26px 44px;min-width:0}
+
+/* top bar */
+.topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.topbar h1{font-size:21px;margin:0 0 2px;font-weight:600}
+.topbar p{margin:0;color:var(--muted);font-size:12.5px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.livechip{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);padding:7px 13px;border-radius:999px;font-size:12px;font-weight:500;color:var(--sky-ink);box-shadow:var(--shadow)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--stable);animation:beat 1.6s ease-in-out infinite}
+.dot.off{background:var(--muted);animation:none}
+@keyframes beat{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.7);opacity:.45}}
+.clock{font-variant-numeric:tabular-nums;color:var(--muted)}
+
+button.btn{font:inherit;font-size:12.5px;font-weight:500;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;transition:background .16s,border-color .16s}
+button.btn:hover{background:var(--wash);border-color:var(--sky)}
+button.btn.primary{background:var(--sky-deep);border-color:var(--sky-deep);color:#fff}
+button.btn.primary:hover{background:var(--sky-ink)}
+button.btn.ghost{border-style:dashed}
+
+/* monitor */
+.monitor{position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:22px 24px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.monitor::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,var(--surface) 0%,transparent 14%,transparent 86%,var(--surface) 100%)}
+.ecg{position:absolute;inset:0;width:100%;height:100%;opacity:.5}
+.ecg path{fill:none;stroke:var(--sky);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ecg .trace{animation:sweep 2.4s linear infinite}
+@keyframes sweep{from{transform:translateX(0)}to{transform:translateX(-200px)}}
+.mon-block{position:relative;z-index:2}
+.mon-block .label,.mon-split .label{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:2px}
+.mon-block .num{font-size:44px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.mon-block .sub{font-size:12px;color:var(--muted);margin-top:5px}
+.mon-split{position:relative;z-index:2;display:flex;gap:30px;flex-wrap:wrap}
+.mon-split .num{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;margin-top:6px}
+.pill.up{background:rgba(16,185,129,.12);color:var(--stable)}
+.pill.warn{background:rgba(249,115,22,.14);color:var(--attention)}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 18px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi .label{font-size:12px;color:var(--muted);font-weight:500}
+.kpi .num{font-size:28px;font-weight:700;margin:8px 0 2px;font-variant-numeric:tabular-nums}
+.kpi .foot{font-size:11.5px;color:var(--muted)}
+.bar{height:5px;border-radius:3px;background:var(--wash);overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--sky),var(--sky-deep));width:0;transition:width 1s cubic-bezier(.22,1,.36,1)}
+.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+.head h2{font-size:14.5px;margin:0;font-weight:600}
+.head span{font-size:11.5px;color:var(--muted)}
+.chartbox{position:relative;height:250px}
+.chartbox.sm{height:200px}
+
+/* table */
+.scroll{max-height:420px;overflow:auto}
+.scroll.short{max-height:250px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-weight:500;color:var(--muted);font-size:11.5px;padding:0 10px 8px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:1}
+td{padding:9px 10px 9px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+.who{font-weight:600}
+.who small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.tag{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.t-Critical{background:rgba(225,29,72,.12);color:var(--critical)}
+.t-Urgent{background:rgba(249,115,22,.14);color:var(--attention)}
+.t-Stable{background:rgba(16,185,129,.12);color:var(--stable)}
+.t-out{background:var(--wash);color:var(--muted)}
+.newrow{animation:slidein .5s cubic-bezier(.22,1,.36,1)}
+@keyframes slidein{from{opacity:0;transform:translateY(-8px);background:var(--wash)}to{opacity:1;transform:none}}
+.rowact{display:flex;gap:6px;justify-content:flex-end}
+.mini{font:inherit;font-size:11px;font-weight:500;padding:4px 9px;border-radius:7px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;transition:.16s}
+.mini:hover{background:var(--wash);color:var(--sky-ink);border-color:var(--sky)}
+.mini.danger:hover{background:rgba(225,29,72,.1);color:var(--critical);border-color:var(--critical)}
+.empty{text-align:center;padding:34px 10px;color:var(--muted);font-size:13px}
+.empty b{display:block;color:var(--ink);font-weight:600;margin-bottom:4px;font-size:14px}
+
+/* form */
+.form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:11.5px;color:var(--muted);font-weight:500}
+.field input,.field select{font:inherit;font-size:13px;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--page);color:var(--ink);width:100%}
+.field input:focus,.field select:focus{outline:2px solid var(--sky);outline-offset:-1px;border-color:var(--sky)}
+.field .err{font-size:11px;color:var(--critical);min-height:14px}
+.formfoot{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.formfoot p{margin:0;font-size:11.5px;color:var(--muted)}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.filters input,.filters select{font:inherit;font-size:12.5px;padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.filters input{flex:1;min-width:170px}
+
+/* stat strip */
+.strip{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface);box-shadow:var(--shadow);margin-bottom:14px}
+.strip div{padding:14px 16px;border-right:1px solid var(--line)}
+.strip div:last-child{border-right:none}
+.strip .label{font-size:11.5px;color:var(--muted)}
+.strip .num{font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+
+/* alerts */
+.alert{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+.alert:last-child{border-bottom:none;padding-bottom:0}
+.alert i{width:3px;border-radius:2px;flex:none;background:var(--sky)}
+.alert.crit i{background:var(--critical)}
+.alert.warn i{background:var(--attention)}
+.alert p{margin:0;font-size:12.5px;font-weight:500}
+.alert small{color:var(--muted);font-size:11px}
+.legend{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.legend div{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.legend b{margin-left:auto;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.sw{width:9px;height:9px;border-radius:3px;flex:none}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(90px);background:var(--ink);color:var(--page);padding:11px 18px;border-radius:11px;font-size:13px;font-weight:500;box-shadow:0 12px 30px -10px rgba(7,41,61,.5);opacity:0;transition:transform .32s cubic-bezier(.22,1,.36,1),opacity .32s;z-index:50;pointer-events:none;max-width:90vw}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+.rise{opacity:0;transform:translateY(12px);animation:rise .55s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+.view{display:none}
+.view.on{display:block}
+
+@media (max-width:1080px){
+  .grid,.grid3{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+  .form{grid-template-columns:1fr 1fr}
+  .strip{grid-template-columns:1fr 1fr 1fr}
+  .strip div{border-bottom:1px solid var(--line)}
+}
+@media (max-width:760px){
+  .shell{grid-template-columns:1fr}
+  .rail{position:static;height:auto;flex-direction:row;align-items:center;gap:14px;overflow-x:auto;border-right:none;border-bottom:1px solid var(--line)}
+  .rail nav{flex-direction:row}
+  .rail-foot{display:none}
+  main{padding:16px 14px 32px}
+  .mon-block .num{font-size:36px}
+  .form{grid-template-columns:1fr}
+  .strip{grid-template-columns:1fr 1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  .rise{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">
+      <div class="mark">A</div>
+      <div><b>Aarogya General</b><span>Nagpur · 412 beds</span></div>
+    </div>
+    <nav>
+      <button id="navOverview" class="on" onclick="showView('overview')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Overview
+      </button>
+      <button id="navPatients" onclick="showView('patients')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c.6-3.8 3.7-6 7.5-6s6.9 2.2 7.5 6"/></svg>
+        Patient data and analysis
+      </button>
+    </nav>
+    <div class="rail-foot">
+      <b id="railCount">0</b> patients in the record<br>
+      Every chart is built from this data.
+    </div>
+  </aside>
+
+  <main>
+    <!-- ============ OVERVIEW ============ -->
+    <div id="view-overview" class="view on">
+      <div class="topbar rise">
+        <div>
+          <h1>Operations overview</h1>
+          <p>Live picture of the hospital, recalculated whenever the patient record changes.</p>
+        </div>
+        <div class="controls">
+          <span class="livechip"><span class="dot" id="liveDot"></span><span id="liveLabel">Live</span> · <span class="clock" id="clock">--:--:--</span></span>
+          <button class="btn" id="intakeBtn" onclick="toggleIntake()">Pause intake</button>
+        </div>
+      </div>
+
+      <section class="monitor rise" style="animation-delay:.05s">
+        <svg class="ecg" viewBox="0 0 800 120" preserveAspectRatio="none" aria-hidden="true">
+          <g class="trace">
+            <path d="M0 60 H30 L36 60 L40 44 L46 78 L52 26 L58 86 L64 60 L70 60 H96 L102 53 L108 67 L114 60 H200"/>
+            <path transform="translate(200)" d="M0 60 H30 L36 60 L40 44 L46 78 L52 26 L58 86 L64 60 L70 60 H96 L102 53 L108 67 L114 60 H200"/>
+            <path transform="translate(400)" d="M0 60 H30 L36 60 L40 44 L46 78 L52 26 L58 86 L64 60 L70 60 H96 L102 53 L108 67 L114 60 H200"/>
+            <path transform="translate(600)" d="M0 60 H30 L36 60 L40 44 L46 78 L52 26 L58 86 L64 60 L70 60 H96 L102 53 L108 67 L114 60 H200"/>
+            <path transform="translate(800)" d="M0 60 H30 L36 60 L40 44 L46 78 L52 26 L58 86 L64 60 L70 60 H96 L102 53 L108 67 L114 60 H200"/>
+          </g>
+        </svg>
+        <div class="mon-block">
+          <div class="label">Patients in the hospital right now</div>
+          <div class="num" id="census">0</div>
+          <div class="sub">Counted from patients with no discharge date</div>
+        </div>
+        <div class="mon-split">
+          <div>
+            <div class="label">Admitted today</div>
+            <div class="num" id="admitsToday">0</div>
+            <span class="pill up">recorded</span>
+          </div>
+          <div>
+            <div class="label">Discharged today</div>
+            <div class="num" id="dischToday">0</div>
+            <span class="pill up">recorded</span>
+          </div>
+          <div>
+            <div class="label">Critical cases</div>
+            <div class="num" id="criticalNow">0</div>
+            <span class="pill warn" id="critPill">monitoring</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="kpis">
+        <div class="card kpi rise" style="animation-delay:.1s">
+          <div class="label">Bed occupancy</div>
+          <div class="num"><span id="occ">0</span>%</div>
+          <div class="foot"><span id="occBeds">0</span> of 412 beds in use</div>
+          <div class="bar"><i id="occBar"></i></div>
+        </div>
+        <div class="card kpi rise" style="animation-delay:.15s">
+          <div class="label">Average wait in OPD</div>
+          <div class="num"><span id="wait">0</span> min</div>
+          <div class="foot">Mean across everyone currently admitted</div>
+          <div class="bar"><i id="waitBar"></i></div>
+        </div>
+        <div class="card kpi rise" style="animation-delay:.2s">
+          <div class="label">ICU beds in use</div>
+          <div class="num"><span id="icu">0</span> / 48</div>
+          <div class="foot">Patients assigned to the ICU ward</div>
+          <div class="bar"><i id="icuBar"></i></div>
+        </div>
+        <div class="card kpi rise" style="animation-delay:.25s">
+          <div class="label">Average length of stay</div>
+          <div class="num"><span id="los">0</span> days</div>
+          <div class="foot">Across completed discharges</div>
+          <div class="bar"><i id="losBar"></i></div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="card rise" style="animation-delay:.3s">
+          <div class="head"><h2>Admissions and discharges by hour</h2><span>last 12 hours</span></div>
+          <div class="chartbox"><canvas id="flowChart"></canvas></div>
+        </div>
+        <div class="card rise" style="animation-delay:.35s">
+          <div class="head"><h2>Latest activity</h2><span>newest first</span></div>
+          <div class="scroll short">
+            <table><thead><tr><th>Patient</th><th>Department</th><th>Status</th><th>Time</th></tr></thead>
+            <tbody id="feedBody"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid3">
+        <div class="card rise" style="animation-delay:.4s">
+          <div class="head"><h2>Load by department</h2><span>active cases</span></div>
+          <div class="chartbox sm"><canvas id="deptChart"></canvas></div>
+        </div>
+        <div class="card rise" style="animation-delay:.45s">
+          <div class="head"><h2>Bed occupancy</h2><span>412 total</span></div>
+          <div class="chartbox sm" style="height:148px"><canvas id="bedChart"></canvas></div>
+          <div class="legend" id="bedLegend"></div>
+        </div>
+        <div class="card rise" style="animation-delay:.5s">
+          <div class="head"><h2>Needs attention</h2><span>from current data</span></div>
+          <div id="alerts"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ PATIENT DATA ============ -->
+    <div id="view-patients" class="view">
+      <div class="topbar rise">
+        <div>
+          <h1>Patient data and analysis</h1>
+          <p>Admit, discharge or remove a record. Every figure on both pages updates straight away.</p>
+        </div>
+        <div class="controls">
+          <button class="btn" onclick="exportCsv()">Download CSV</button>
+          <button class="btn ghost" onclick="resetData()">Reset to sample data</button>
+        </div>
+      </div>
+
+      <section class="card rise" style="margin-bottom:14px">
+        <div class="head"><h2>Admit a patient</h2><span>added to the record immediately</span></div>
+        <div class="form">
+          <div class="field">
+            <label for="fName">Full name</label>
+            <input id="fName" type="text" placeholder="Rohan Deshmukh" autocomplete="off">
+            <div class="err" id="eName"></div>
+          </div>
+          <div class="field">
+            <label for="fAge">Age</label>
+            <input id="fAge" type="number" min="0" max="120" placeholder="34">
+            <div class="err" id="eAge"></div>
+          </div>
+          <div class="field">
+            <label for="fGender">Gender</label>
+            <select id="fGender"><option>Female</option><option>Male</option><option>Other</option></select>
+            <div class="err"></div>
+          </div>
+          <div class="field">
+            <label for="fDept">Department</label>
+            <select id="fDept"></select>
+            <div class="err"></div>
+          </div>
+          <div class="field">
+            <label for="fSeverity">Severity</label>
+            <select id="fSeverity"><option>Stable</option><option>Urgent</option><option>Critical</option></select>
+            <div class="err"></div>
+          </div>
+          <div class="field">
+            <label for="fWard">Ward</label>
+            <select id="fWard"><option>A</option><option>B</option><option>C</option><option>ICU</option></select>
+            <div class="err"></div>
+          </div>
+          <div class="field">
+            <label for="fWait">Wait before seen (minutes)</label>
+            <input id="fWait" type="number" min="0" max="300" placeholder="22">
+            <div class="err" id="eWait"></div>
+          </div>
+          <div class="field">
+            <label for="fCost">Treatment cost (₹)</label>
+            <input id="fCost" type="number" min="0" placeholder="18000">
+            <div class="err"></div>
+          </div>
+        </div>
+        <div class="formfoot">
+          <button class="btn primary" onclick="admitPatient()">Admit patient</button>
+          <button class="btn" onclick="fillSample()">Fill with example</button>
+          <p>Name, age and wait time are required.</p>
+        </div>
+      </section>
+
+      <section class="strip rise" style="animation-delay:.05s">
+        <div><div class="label">Total records</div><div class="num" id="sTotal">0</div></div>
+        <div><div class="label">Currently admitted</div><div class="num" id="sIn">0</div></div>
+        <div><div class="label">Discharged</div><div class="num" id="sOut">0</div></div>
+        <div><div class="label">Average age</div><div class="num" id="sAge">0</div></div>
+        <div><div class="label">Average cost</div><div class="num" id="sCost">₹0</div></div>
+      </section>
+
+      <section class="grid3 rise" style="animation-delay:.1s">
+        <div class="card">
+          <div class="head"><h2>Severity split</h2><span>admitted patients</span></div>
+          <div class="chartbox sm" style="height:168px"><canvas id="sevChart"></canvas></div>
+          <div class="legend" id="sevLegend"></div>
+        </div>
+        <div class="card">
+          <div class="head"><h2>Patients by age band</h2><span>whole record</span></div>
+          <div class="chartbox sm"><canvas id="ageChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="head"><h2>Average stay by department</h2><span>days, discharged cases</span></div>
+          <div class="chartbox sm"><canvas id="stayChart"></canvas></div>
+        </div>
+      </section>
+
+      <section class="card rise" style="animation-delay:.15s">
+        <div class="head">
+          <h2>Patient record</h2>
+          <span id="tableCount">0 shown</span>
+        </div>
+        <div class="filters">
+          <input id="qSearch" type="search" placeholder="Search by name or patient ID" oninput="render()">
+          <select id="qDept" onchange="render()"><option value="">All departments</option></select>
+          <select id="qSeverity" onchange="render()">
+            <option value="">All severities</option><option>Stable</option><option>Urgent</option><option>Critical</option>
+          </select>
+          <select id="qStatus" onchange="render()">
+            <option value="">Admitted and discharged</option>
+            <option value="in">Currently admitted</option>
+            <option value="out">Discharged</option>
+          </select>
+        </div>
+        <div class="scroll">
+          <table>
+            <thead><tr>
+              <th>Patient</th><th>Age</th><th>Department</th><th>Severity</th>
+              <th>Ward</th><th>Admitted</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ==========================================================================
+   Hospital Management Dashboard
+   One patient array drives everything. Change it and every number redraws.
+   ========================================================================== */
+const TOTAL_BEDS = 412, ICU_BEDS = 48, STORE_KEY = "agh_patients_v2";
+const DEPTS = ["Emergency","Cardiology","Orthopaedics","Paediatrics","General medicine","Maternity"];
+const SEVERITIES = ["Stable","Urgent","Critical"];
+const WARDS = ["A","B","C","ICU"];
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const rnd = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const mean = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : 0;
+const startOfToday = () => { const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); };
+const hhmmss = ms => new Date(ms).toLocaleTimeString("en-IN",{hour12:false});
+const dmy = ms => new Date(ms).toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
+
+let patients = [];
+let seq = 1;
+let intakeOn = true;
+
+/* ---------- sample data ---------------------------------------------------
+   Severity is deliberately linked to length of stay, so the analysis has a
+   real relationship to find. -------------------------------------------- */
+const FIRST = ["Rohan","Aditi","Imran","Sneha","Vikram","Meera","Arjun","Kavya","Sanjay","Priya","Faisal","Neha","Dev","Anjali","Ravi","Tanvi","Omkar","Sara"];
+const LAST = ["Deshmukh","Kulkarni","Shaikh","Rao","Iyer","Bhosale","Naik","Verma","Pillai","Joshi","Gaikwad","Sheikh"];
+
+function stayDaysFor(sev){
+  const base = 1 + Math.random()*4;
+  return +(base + (sev==="Critical"?4.5:sev==="Urgent"?1.6:0)).toFixed(1);
+}
+function ageFor(dept){
+  if(dept === "Paediatrics") return rnd(0,15);
+  if(dept === "Maternity") return rnd(19,42);
+  if(dept === "Cardiology") return rnd(38,89);
+  return Math.max(16, Math.min(97, Math.round(44 + (Math.random()+Math.random()+Math.random()-1.5)*24)));
+}
+function newPatient(active){
+  const sev = Math.random()<.12 ? "Critical" : Math.random()<.35 ? "Urgent" : "Stable";
+  const stay = stayDaysFor(sev);
+  const dept = pick(DEPTS);
+  // Active patients were admitted recently enough that their stay is not over.
+  const admittedAt = active
+    ? Date.now() - rnd(0, Math.floor(stay*24*60))*60000
+    : Date.now() - rnd(Math.ceil(stay*24*60), 21*24*60)*60000;
+  return {
+    id: "AGH-" + (10000 + seq++),
+    name: pick(FIRST)+" "+pick(LAST),
+    age: ageFor(dept),
+    gender: dept === "Maternity" ? "Female" : (Math.random()<.51 ? "Male" : "Female"),
+    dept,
+    severity: sev,
+    ward: sev==="Critical" && Math.random()<.6 ? "ICU" : pick(["A","B","C"]),
+    admittedAt,
+    dischargedAt: active ? null : admittedAt + stay*864e5,
+    waitMinutes: Math.max(2, Math.round(26 + (Math.random()-.5)*34)),
+    cost: Math.round(stay * (3600 + Math.random()*1800))
+  };
+}
+function makeSample(total=520, active=285){
+  const out = [];
+  for(let i=0;i<total;i++) out.push(newPatient(i < active));
+  return out.sort((a,b) => a.admittedAt - b.admittedAt);
+}
+
+/* ---------- persistence -------------------------------------------------- */
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({seq, patients})); }
+  catch{ /* storage unavailable, the board still works for this session */ }
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      const d = JSON.parse(raw);
+      if(Array.isArray(d.patients) && d.patients.length){
+        patients = d.patients; seq = d.seq || patients.length + 1; return;
+      }
+    }
+  }catch{}
+  patients = makeSample();
+  save();
+}
+
+/* ---------- derived statistics: the analysis layer ----------------------- */
+const admitted = () => patients.filter(p => !p.dischargedAt);
+const discharged = () => patients.filter(p => p.dischargedAt);
+
+function stats(){
+  const inside = admitted(), out = discharged(), today = startOfToday();
+  const stays = out.map(p => (p.dischargedAt - p.admittedAt)/864e5);
+  return {
+    census: inside.length,
+    admitsToday: patients.filter(p => p.admittedAt >= today).length,
+    dischToday: out.filter(p => p.dischargedAt >= today).length,
+    critical: inside.filter(p => p.severity === "Critical").length,
+    occupied: Math.min(inside.length, TOTAL_BEDS),
+    icu: inside.filter(p => p.ward === "ICU").length,
+    avgWait: Math.round(mean(inside.map(p => p.waitMinutes))),
+    avgStay: +mean(stays).toFixed(1),
+    avgAge: Math.round(mean(patients.map(p => p.age))),
+    avgCost: Math.round(mean(patients.map(p => p.cost))),
+    total: patients.length,
+    out: out.length
+  };
+}
+function byDept(){ return DEPTS.map(d => admitted().filter(p => p.dept === d).length); }
+function bySeverity(){ return SEVERITIES.map(s => admitted().filter(p => p.severity === s).length); }
+function byAgeBand(){
+  const bands = [[0,12],[13,25],[26,40],[41,60],[61,120]];
+  return bands.map(([lo,hi]) => patients.filter(p => p.age >= lo && p.age <= hi).length);
+}
+function avgStayByDept(){
+  return DEPTS.map(d => {
+    const s = discharged().filter(p => p.dept === d).map(p => (p.dischargedAt - p.admittedAt)/864e5);
+    return +mean(s).toFixed(1);
+  });
+}
+function hourlyFlow(){
+  const labels = [], adm = [], dis = [];
+  const now = new Date(); now.setMinutes(0,0,0);
+  for(let i=11;i>=0;i--){
+    const from = now.getTime() - i*36e5, to = from + 36e5;
+    labels.push(new Date(from).toLocaleTimeString("en-IN",{hour12:false,hour:"2-digit",minute:"2-digit"}));
+    adm.push(patients.filter(p => p.admittedAt >= from && p.admittedAt < to).length);
+    dis.push(patients.filter(p => p.dischargedAt && p.dischargedAt >= from && p.dischargedAt < to).length);
+  }
+  return {labels, adm, dis};
+}
+function buildAlerts(){
+  const s = stats(), out = [], loads = byDept();
+  const free = TOTAL_BEDS - s.occupied;
+  if(s.icu > ICU_BEDS*0.85) out.push({k:"crit",p:`ICU at ${s.icu} of ${ICU_BEDS} beds`,s:"Critical care · consider diverting new critical cases"});
+  if(free < 40) out.push({k:"crit",p:`Only ${free} beds free across the hospital`,s:"Bed management · discharge planning needed"});
+  if(s.critical > 18) out.push({k:"warn",p:`${s.critical} critical patients admitted`,s:"Above the usual daily range"});
+  loads.forEach((n,i)=>{ if(n > 55) out.push({k:"warn",p:`${DEPTS[i]} is carrying ${n} active cases`,s:"Department load · consider reassigning staff"}); });
+  if(s.avgWait > 35) out.push({k:"warn",p:`Average wait has reached ${s.avgWait} minutes`,s:"Outpatient flow · open another counter"});
+  if(!out.length) out.push({k:"",p:"Every ward is within its normal load",s:"No thresholds crossed in the current data"});
+  return out.slice(0,5);
+}
+
+/* ---------- charts ------------------------------------------------------- */
+Chart.defaults.font.family = "Inter, Arial, sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = css("--muted");
+const anim = {duration: reduce ? 0 : 650};
+let flowChart, deptChart, bedChart, sevChart, ageChart, stayChart;
+
+function initCharts(){
+  const f = hourlyFlow();
+  const fctx = document.getElementById("flowChart").getContext("2d");
+  const grad = fctx.createLinearGradient(0,0,0,250);
+  grad.addColorStop(0,"rgba(56,189,248,.34)"); grad.addColorStop(1,"rgba(56,189,248,0)");
+
+  flowChart = new Chart(fctx,{
+    type:"line",
+    data:{labels:f.labels,datasets:[
+      {label:"Admissions",data:f.adm,borderColor:css("--sky-deep"),backgroundColor:grad,fill:true,tension:.4,borderWidth:2.4,pointRadius:0,pointHoverRadius:4},
+      {label:"Discharges",data:f.dis,borderColor:css("--stable"),fill:false,tension:.4,borderWidth:2,borderDash:[5,4],pointRadius:0,pointHoverRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:anim,interaction:{mode:"index",intersect:false},
+      plugins:{legend:{position:"top",align:"end",labels:{boxWidth:9,boxHeight:9,usePointStyle:true,pointStyle:"circle",padding:14}}},
+      scales:{x:{grid:{display:false},ticks:{maxTicksLimit:7}},y:{beginAtZero:true,grid:{color:css("--line")},border:{display:false},ticks:{precision:0}}}}
+  });
+
+  deptChart = new Chart(document.getElementById("deptChart"),{
+    type:"bar",
+    data:{labels:DEPTS,datasets:[{data:byDept(),backgroundColor:css("--sky"),hoverBackgroundColor:css("--sky-deep"),borderRadius:5,barThickness:13}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,animation:anim,plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true,grid:{color:css("--line")},border:{display:false},ticks:{precision:0}},y:{grid:{display:false},border:{display:false}}}}
+  });
+
+  bedChart = new Chart(document.getElementById("bedChart"),{
+    type:"doughnut",
+    data:{labels:["Occupied","Available"],datasets:[{data:[0,TOTAL_BEDS],backgroundColor:[css("--sky-deep"),css("--wash")],borderWidth:0,cutout:"68%"}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:anim,plugins:{legend:{display:false}}}
+  });
+
+  sevChart = new Chart(document.getElementById("sevChart"),{
+    type:"doughnut",
+    data:{labels:SEVERITIES,datasets:[{data:bySeverity(),backgroundColor:[css("--stable"),css("--attention"),css("--critical")],borderWidth:0,cutout:"64%"}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:anim,plugins:{legend:{display:false}}}
+  });
+
+  ageChart = new Chart(document.getElementById("ageChart"),{
+    type:"bar",
+    data:{labels:["0-12","13-25","26-40","41-60","60+"],datasets:[{data:byAgeBand(),backgroundColor:css("--sky"),hoverBackgroundColor:css("--sky-deep"),borderRadius:6,barThickness:24}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:anim,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},border:{display:false}},y:{beginAtZero:true,grid:{color:css("--line")},border:{display:false},ticks:{precision:0}}}}
+  });
+
+  stayChart = new Chart(document.getElementById("stayChart"),{
+    type:"bar",
+    data:{labels:DEPTS,datasets:[{data:avgStayByDept(),backgroundColor:css("--sky-deep"),borderRadius:5,barThickness:12}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,animation:anim,plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true,grid:{color:css("--line")},border:{display:false}},y:{grid:{display:false},border:{display:false}}}}
+  });
+}
+
+/* ---------- animated counters ------------------------------------------- */
+function countTo(el, target, suffix=""){
+  if(!el) return;
+  if(reduce){ el.textContent = target + suffix; return; }
+  const start = parseFloat(String(el.textContent).replace(/[^\d.-]/g,"")) || 0;
+  if(start === target){ el.textContent = target + suffix; return; }
+  const t0 = performance.now(), dur = 700, dec = String(target).includes(".") ? 1 : 0;
+  (function step(t){
+    const p = Math.min((t-t0)/dur,1), e = 1-Math.pow(1-p,3);
+    el.textContent = (start+(target-start)*e).toFixed(dec) + suffix;
+    if(p<1) requestAnimationFrame(step); else el.textContent = target + suffix;
+  })(performance.now());
+}
+
+/* ---------- render: the single redraw path ------------------------------ */
+function render(){
+  const s = stats();
+
+  // overview headline
+  countTo(document.getElementById("census"), s.census);
+  countTo(document.getElementById("admitsToday"), s.admitsToday);
+  countTo(document.getElementById("dischToday"), s.dischToday);
+  countTo(document.getElementById("criticalNow"), s.critical);
+  const cp = document.getElementById("critPill");
+  cp.textContent = s.critical > 18 ? "above usual range" : "within range";
+  cp.className = "pill " + (s.critical > 18 ? "warn" : "up");
+
+  // kpis
+  const occPct = Math.round(s.occupied / TOTAL_BEDS * 100);
+  countTo(document.getElementById("occ"), occPct);
+  countTo(document.getElementById("occBeds"), s.occupied);
+  document.getElementById("occBar").style.width = occPct + "%";
+  countTo(document.getElementById("wait"), s.avgWait);
+  document.getElementById("waitBar").style.width = Math.min(s.avgWait/60*100,100) + "%";
+  countTo(document.getElementById("icu"), s.icu);
+  document.getElementById("icuBar").style.width = Math.min(s.icu/ICU_BEDS*100,100) + "%";
+  countTo(document.getElementById("los"), s.avgStay);
+  document.getElementById("losBar").style.width = Math.min(s.avgStay/14*100,100) + "%";
+
+  // patient page strip
+  countTo(document.getElementById("sTotal"), s.total);
+  countTo(document.getElementById("sIn"), s.census);
+  countTo(document.getElementById("sOut"), s.out);
+  countTo(document.getElementById("sAge"), s.avgAge);
+  document.getElementById("sCost").textContent = "₹" + s.avgCost.toLocaleString("en-IN");
+  document.getElementById("railCount").textContent = s.total;
+
+  // charts
+  const f = hourlyFlow();
+  flowChart.data.labels = f.labels;
+  flowChart.data.datasets[0].data = f.adm;
+  flowChart.data.datasets[1].data = f.dis;
+  flowChart.update();
+
+  deptChart.data.datasets[0].data = byDept(); deptChart.update();
+  bedChart.data.datasets[0].data = [s.occupied, Math.max(TOTAL_BEDS - s.occupied, 0)]; bedChart.update();
+  document.getElementById("bedLegend").innerHTML =
+    [["Occupied",s.occupied,css("--sky-deep")],["Available",Math.max(TOTAL_BEDS-s.occupied,0),css("--wash")]]
+    .map(([l,v,c]) => `<div><span class="sw" style="background:${c}"></span>${l}<b>${v}</b></div>`).join("");
+
+  const sev = bySeverity();
+  sevChart.data.datasets[0].data = sev; sevChart.update();
+  const sevColors = [css("--stable"),css("--attention"),css("--critical")];
+  document.getElementById("sevLegend").innerHTML = SEVERITIES
+    .map((l,i) => `<div><span class="sw" style="background:${sevColors[i]}"></span>${l}<b>${sev[i]}</b></div>`).join("");
+
+  ageChart.data.datasets[0].data = byAgeBand(); ageChart.update();
+  stayChart.data.datasets[0].data = avgStayByDept(); stayChart.update();
+
+  // alerts
+  document.getElementById("alerts").innerHTML = buildAlerts()
+    .map(a => `<div class="alert ${a.k}"><i></i><div><p>${esc(a.p)}</p><small>${esc(a.s)}</small></div></div>`).join("");
+
+  renderFeed();
+  renderTable();
+  save();
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function renderFeed(){
+  const recent = [...patients].sort((a,b) => b.admittedAt - a.admittedAt).slice(0,12);
+  document.getElementById("feedBody").innerHTML = recent.map(p => `
+    <tr><td class="who">${esc(p.name)}<small>${p.id}</small></td>
+    <td>${p.dept}</td>
+    <td><span class="tag ${p.dischargedAt ? "t-out" : "t-"+p.severity}">${p.dischargedAt ? "Discharged" : p.severity}</span></td>
+    <td style="color:var(--muted);font-variant-numeric:tabular-nums">${hhmmss(p.admittedAt)}</td></tr>`).join("");
+}
+
+function renderTable(){
+  const q = document.getElementById("qSearch").value.trim().toLowerCase();
+  const dept = document.getElementById("qDept").value;
+  const sev = document.getElementById("qSeverity").value;
+  const status = document.getElementById("qStatus").value;
+
+  const rows = patients.filter(p => {
+    if(q && !(p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q))) return false;
+    if(dept && p.dept !== dept) return false;
+    if(sev && p.severity !== sev) return false;
+    if(status === "in" && p.dischargedAt) return false;
+    if(status === "out" && !p.dischargedAt) return false;
+    return true;
+  }).sort((a,b) => b.admittedAt - a.admittedAt);
+
+  document.getElementById("tableCount").textContent =
+    `${rows.length} of ${patients.length} shown`;
+
+  const body = document.getElementById("tableBody");
+  if(!rows.length){
+    body.innerHTML = `<tr><td colspan="8"><div class="empty"><b>No patients match these filters</b>
+      Clear the search box or pick a different department to see records again.</div></td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.slice(0,300).map(p => `
+    <tr data-id="${p.id}">
+      <td class="who">${esc(p.name)}<small>${p.id} · ${p.gender}</small></td>
+      <td>${p.age}</td>
+      <td>${p.dept}</td>
+      <td><span class="tag t-${p.severity}">${p.severity}</span></td>
+      <td>${p.ward}</td>
+      <td style="color:var(--muted)">${dmy(p.admittedAt)}</td>
+      <td>${p.dischargedAt ? `<span class="tag t-out">Discharged</span>` : `<span class="tag t-Stable">Admitted</span>`}</td>
+      <td><div class="rowact">
+        ${p.dischargedAt ? "" : `<button class="mini" onclick="dischargePatient('${p.id}')">Discharge</button>`}
+        <button class="mini danger" onclick="removePatient('${p.id}')">Remove</button>
+      </div></td>
+    </tr>`).join("");
+}
+
+/* ---------- actions ------------------------------------------------------ */
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+function admitPatient(){
+  const name = document.getElementById("fName").value.trim();
+  const age = document.getElementById("fAge").value;
+  const wait = document.getElementById("fWait").value;
+  let ok = true;
+
+  document.getElementById("eName").textContent = "";
+  document.getElementById("eAge").textContent = "";
+  document.getElementById("eWait").textContent = "";
+
+  if(name.length < 2){ document.getElementById("eName").textContent = "Enter the patient's name"; ok = false; }
+  if(age === "" || +age < 0 || +age > 120){ document.getElementById("eAge").textContent = "Age must be between 0 and 120"; ok = false; }
+  if(wait === "" || +wait < 0){ document.getElementById("eWait").textContent = "Enter the wait in minutes"; ok = false; }
+  if(!ok) return;
+
+  const p = {
+    id: "AGH-" + (10000 + seq++),
+    name,
+    age: +age,
+    gender: document.getElementById("fGender").value,
+    dept: document.getElementById("fDept").value,
+    severity: document.getElementById("fSeverity").value,
+    ward: document.getElementById("fWard").value,
+    admittedAt: Date.now(),
+    dischargedAt: null,
+    waitMinutes: +wait,
+    cost: +document.getElementById("fCost").value || rnd(6000, 60000)
+  };
+  patients.push(p);
+  render();
+
+  ["fName","fAge","fWait","fCost"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("fName").focus();
+  toast(`${p.name} admitted to ${p.dept} · ${p.id}`);
+}
+
+function dischargePatient(id){
+  const p = patients.find(x => x.id === id);
+  if(!p || p.dischargedAt) return;
+  p.dischargedAt = Date.now();
+  render();
+  toast(`${p.name} discharged`);
+}
+
+function removePatient(id){
+  const i = patients.findIndex(x => x.id === id);
+  if(i < 0) return;
+  const [p] = patients.splice(i,1);
+  render();
+  toast(`${p.name} removed from the record`);
+}
+
+function resetData(){
+  seq = 1;
+  patients = makeSample();
+  render();
+  toast(`Record reset to ${patients.length} sample patients`);
+}
+
+function fillSample(){
+  document.getElementById("fName").value = pick(FIRST)+" "+pick(LAST);
+  document.getElementById("fAge").value = rnd(3,88);
+  document.getElementById("fGender").value = pick(["Male","Female"]);
+  document.getElementById("fDept").value = pick(DEPTS);
+  document.getElementById("fSeverity").value = pick(SEVERITIES);
+  document.getElementById("fWard").value = pick(WARDS);
+  document.getElementById("fWait").value = rnd(5,55);
+  document.getElementById("fCost").value = rnd(6000,60000);
+}
+
+function exportCsv(){
+  const head = ["patient_id","name","age","gender","department","severity","ward","admitted_at","discharged_at","wait_minutes","treatment_cost"];
+  const lines = patients.map(p => [
+    p.id, `"${p.name.replace(/"/g,'""')}"`, p.age, p.gender, p.dept, p.severity, p.ward,
+    new Date(p.admittedAt).toISOString(),
+    p.dischargedAt ? new Date(p.dischargedAt).toISOString() : "",
+    p.waitMinutes, p.cost
+  ].join(","));
+  const blob = new Blob([head.join(",")+"\n"+lines.join("\n")], {type:"text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "patients.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`Exported ${patients.length} records to patients.csv`);
+}
+
+/* ---------- views -------------------------------------------------------- */
+function showView(name){
+  document.getElementById("view-overview").classList.toggle("on", name === "overview");
+  document.getElementById("view-patients").classList.toggle("on", name === "patients");
+  document.getElementById("navOverview").classList.toggle("on", name === "overview");
+  document.getElementById("navPatients").classList.toggle("on", name === "patients");
+  // charts sized while hidden need a nudge once visible
+  [flowChart,deptChart,bedChart,sevChart,ageChart,stayChart].forEach(c => c && c.resize());
+  window.scrollTo({top:0, behavior: reduce ? "auto" : "smooth"});
+}
+
+/* ---------- live intake -------------------------------------------------- */
+function toggleIntake(){
+  intakeOn = !intakeOn;
+  document.getElementById("intakeBtn").textContent = intakeOn ? "Pause intake" : "Resume intake";
+  document.getElementById("liveDot").classList.toggle("off", !intakeOn);
+  document.getElementById("liveLabel").textContent = intakeOn ? "Live" : "Paused";
+  toast(intakeOn ? "Live intake resumed" : "Live intake paused");
+}
+
+function simulateArrival(){
+  const sev = Math.random()<.12 ? "Critical" : Math.random()<.35 ? "Urgent" : "Stable";
+  patients.push({
+    id: "AGH-" + (10000 + seq++),
+    name: pick(FIRST)+" "+pick(LAST),
+    age: rnd(1,92),
+    gender: Math.random()<.51 ? "Male":"Female",
+    dept: pick(DEPTS),
+    severity: sev,
+    ward: sev === "Critical" && Math.random()<.6 ? "ICU" : pick(WARDS),
+    admittedAt: Date.now(),
+    dischargedAt: null,
+    waitMinutes: rnd(4,58),
+    cost: rnd(5000,70000)
+  });
+  // keep the hospital realistic: discharge someone who has been in a while
+  const longStay = admitted().filter(p => Date.now()-p.admittedAt > 3*864e5);
+  if(longStay.length > 120 || admitted().length > 400){
+    const victim = pick(longStay.length ? longStay : admitted());
+    if(victim) victim.dischargedAt = Date.now();
+  }
+  render();
+}
+
+/* ---------- boot --------------------------------------------------------- */
+function boot(){
+  const deptSelect = document.getElementById("fDept");
+  const deptFilter = document.getElementById("qDept");
+  DEPTS.forEach(d => {
+    deptSelect.insertAdjacentHTML("beforeend", `<option>${d}</option>`);
+    deptFilter.insertAdjacentHTML("beforeend", `<option>${d}</option>`);
+  });
+
+  load();
+  initCharts();
+  render();
+
+  setInterval(() => {
+    document.getElementById("clock").textContent = new Date().toLocaleTimeString("en-IN",{hour12:false});
+  }, 1000);
+  setInterval(() => { if(intakeOn) simulateArrival(); }, 6000);
+}
+boot();
+</script>
+</body>
+</html>
